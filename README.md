@@ -23,7 +23,7 @@ For each communication between nodes, net2ban uses AES256 encryption in CBC mode
 
 Working flow
 ------------
-To identify the difference between fail2ban and net2ban, and understand how they can be mixed, there is a schema representing the architecture of both tools:
+To identify the difference between fail2ban and net2ban, and understand how they can be mixed, here is a simple schema representing the workflow of both tools:
 
 Fail2Ban:
 <dl><pre>
