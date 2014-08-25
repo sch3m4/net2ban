@@ -336,7 +336,7 @@ filter f_net2ban { facility ( daemon ); program ( "net2ban" ); };
 log { source(s_src); filter(f_net2ban); destination(d_net2ban); flags ( final ); };
 log { source(s_udp); filter(f_net2ban); destination(d_rnet2ban); flags ( final ); };</pre></dl></pre></dl>
 
-Keep in mind that the "log" rules must be the firsts matching rules in order to avoid duplicate logs.
+Keep in mind that the "log" rules must be the first matching rules in order to avoid duplicate logs.
 
 Sample output
 -------------
