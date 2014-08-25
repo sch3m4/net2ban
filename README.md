@@ -63,7 +63,7 @@ Net2Ban:
 
 Why RabbitMQ?
 -------------
-It is true that there are many message brokers such as reddit or activemq, some of them give you a higher performance level when dealing in big environments such as WANs, but in my case, there was a RabbitMQ server already installed in the network. On the other hand, net2ban can be modify to work with a message broker specified in the configuration file. This approach could be made in future versions...
+It is true that there are many message brokers such as reddit or activemq, some of them give you a higher performance level when dealing in big environments such as WANs, but in my case, there was a RabbitMQ server already installed in the network. On the other hand, net2ban can be modified to work with a message broker specified in the configuration file. This approach could be made in future versions...
 
 Installation
 ============
