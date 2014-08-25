@@ -21,7 +21,7 @@ Security
 For each communication between nodes, net2ban uses AES256 encryption in CBC mode, PBKDF2 to generate the session key and HMAC-SHA256, in order to protect and guarantee the integrity,confidentiality and authenticity of each message. The parameters to set up the encryption schema will be explained in the next points.
 
 
-Working flow
+Workflow
 ------------
 To identify the difference between fail2ban and net2ban, and understand how they can be mixed, here is a simple schema representing the workflow of both tools:
 
