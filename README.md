@@ -340,7 +340,7 @@ Keep in mind that the "log" rules must be the first matching rules in order to a
 
 Sample output
 -------------
-Whenever fail2ban detects a breakin attept, it will generate an entry in the log like this:
+Whenever fail2ban detects a break-in attept, it will generate an entry in the log like this:
 
 <dl><pre>.... fail2ban.actions: WARNING [dovecot] Ban 95.48.84.XXX</pre></db>
 
