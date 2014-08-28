@@ -108,9 +108,6 @@ def server_callback(ch, method, properties, body):
 
 
 def main():
-	syslog.openlog ( ident = n2b.get_syslog_ident() , facility = syslog.LOG_DAEMON )
-	syslog.syslog ( syslog.LOG_INFO , "net2ban %s started. Reading configuration file: %s" % ( n2b.get_version() , n2b.get_config_file() ) )
-
 	config = ConfigParser.ConfigParser()
 	config.read ( n2b.get_config_file() )
 
@@ -195,5 +192,12 @@ def main():
 if __name__ == "__main__":
 	signal.signal ( signal.SIGINT, exit_net2ban )
 	signal.signal ( signal.SIGTERM, exit_net2ban )
-	main()
+	
+        syslog.openlog ( ident = n2b.get_syslog_ident() , facility = syslog.LOG_DAEMON )
+        syslog.syslog ( syslog.LOG_INFO , "net2ban %s started. Reading configuration file: %s" % ( n2b.get_version() , n2b.get_config_file() ) )
 
+        while True:
+                try:
+                        main()
+                except Exception,e:
+                        syslog.syslog ( syslog.LOG_WARNING , "Error detected, restarting fail2ban: %s" , e )
