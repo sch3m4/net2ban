@@ -108,7 +108,7 @@ In order to allow net2ban user execute the iptables binary, add the following en
 echo 'net2ban ALL=NOPASSWD: /sbin/iptables' >> /etc/sudoers
 </pre></dl>
 
-NOTE: Add an entry like the aforementioned to each privileged command susceptible of being executed by net2ban clients
+NOTE: Add an entry like the aforementioned for each privileged command susceptible of being executed by net2ban clients
 
 ##### Final common steps
 As final steps, don't forget to change the owner and permissions of net2ban files:
