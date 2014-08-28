@@ -314,14 +314,14 @@ Personally I prefer to ban the IP without taking care about the port, so the giv
 
 <dl><pre>
 [Definition]
-actionstart = sudo iptables -N fail2ban-<name>
-              sudo iptables -A fail2ban-<name> -j RETURN
-              sudo iptables -I <chain> -p <protocol> -j fail2ban-<name>
-actionstop = sudo iptables -D <chain> -p <protocol> -j fail2ban-<name>
-             sudo iptables -F fail2ban-<name>
-             sudo iptables -X fail2ban-<name>
-actionban = sudo iptables -I fail2ban-<name> 1 -s <ip> -j DROP
-actionunban = sudo iptables -D fail2ban-<name> -s <ip> -j DROP
+actionstart = sudo iptables -N fail2ban-&lt;name&gt;
+              sudo iptables -A fail2ban-&lt;name&gt; -j RETURN
+              sudo iptables -I &lt;chain&gt; -p &lt;protocol&gt; -j fail2ban-&lt;name&gt;
+actionstop = sudo iptables -D &lt;chain&gt; -p &lt;protocol&gt; -j fail2ban-&lt;name&gt;
+             sudo iptables -F fail2ban-&lt;name&gt;
+             sudo iptables -X fail2ban-&lt;name&gt;
+actionban = sudo iptables -I fail2ban-&lt;name&gt; 1 -s &lt;ip&gt; -j DROP
+actionunban = sudo iptables -D fail2ban-&lt;name&gt; -s &lt;ip&gt; -j DROP
 [Init]
 name = default
 port = ssh
