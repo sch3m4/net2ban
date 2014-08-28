@@ -310,6 +310,25 @@ $
 
 IMPORTANT: Remember to modify the actions file and add "sudo" before "iptables" to execute each command as root.
 
+Personally I prefer to ban the IP without taking care about the port, so the given IP is globally banned, here is my "iptables-multiport.conf" actions file:
+
+<dl><pre>
+[Definition]
+actionstart = sudo iptables -N fail2ban-<name>
+              sudo iptables -A fail2ban-<name> -j RETURN
+              sudo iptables -I <chain> -p <protocol> -j fail2ban-<name>
+actionstop = sudo iptables -D <chain> -p <protocol> -j fail2ban-<name>
+             sudo iptables -F fail2ban-<name>
+             sudo iptables -X fail2ban-<name>
+actionban = sudo iptables -I fail2ban-<name> 1 -s <ip> -j DROP
+actionunban = sudo iptables -D fail2ban-<name> -s <ip> -j DROP
+[Init]
+name = default
+port = ssh
+protocol = tcp
+chain = INPUT
+</pre></dl>
+
 After that you should see something like this in your syslog:
 
 <dl><pre>
