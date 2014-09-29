@@ -28,37 +28,438 @@
 
     <div class="container">
       <section id="main_content">
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+        <h2>
+<a name="the-problem" class="anchor" href="#the-problem"><span class="octicon octicon-link"></span></a>The problem</h2>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<p>Imagine a common scenario in which you have to manage multiple servers and all those servers send its logs to a remote centralized syslog server. In this scenario may that be even the final servers do not store its logs locally unless a network connection problem occurs.</p>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+<p>So you have a centralized syslog server in which you store (among others) all detected break-in attempts, brute force attacks, etc. The next question is, once you have detected a break-in attempt or a brute force attack in one of your servers, how can you remotely ban the attacker IP in that server and in the other ones?</p>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<h2>
+<a name="the-first-response-fail2ban" class="anchor" href="#the-first-response-fail2ban"><span class="octicon octicon-link"></span></a>The first response: Fail2Ban</h2>
 
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+<p>Fail2Ban is a great and very powerful tool, but it is designed to work locally, what turns it  in a nightmare when trying to use it in our scenario. Even if the logs were stored locally, you still have to manage the fail2ban filters and actions in all servers, although this approach could be solved by using some kind of shared storage, etc.</p>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<h2>
+<a name="the-good-response-net2ban" class="anchor" href="#the-good-response-net2ban"><span class="octicon octicon-link"></span></a>The good response: Net2Ban</h2>
 
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+<p>Since I did not found any open source project to manage the given approach, I decided to write my own solution, here is where net2ban comes in rescue.</p>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<h2>
+<a name="what-is-net2ban" class="anchor" href="#what-is-net2ban"><span class="octicon octicon-link"></span></a>What is Net2Ban?</h2>
 
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+<p>As you can guess, Net2Ban is inspired in fail2ban, but it is much more simple and flexible. It has two <em>main</em> parts: Server, and client. Aditionaly it uses RabbitMQ as message brooker to communicate from server to clients, and has a tool to send commands to the server in order to propagate the actions.</p>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<h2>
+<a name="security" class="anchor" href="#security"><span class="octicon octicon-link"></span></a>Security</h2>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+<p>For each communication between nodes, net2ban uses AES256 encryption in CBC mode, PBKDF2 to generate the session key and HMAC-SHA256, in order to protect and guarantee the integrity,confidentiality and authenticity of each message. The parameters to set up the encryption schema will be explained in the next points.</p>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<h2>
+<a name="workflow" class="anchor" href="#workflow"><span class="octicon octicon-link"></span></a>Workflow</h2>
+
+<p>To identify the difference between fail2ban and net2ban, and understand how they can be mixed, here is a simple schema representing the workflow of both tools:</p>
+
+<p>Fail2Ban:</p>
+
+<dl><pre>
+                            --&gt; filters -&gt;-
+                          2 |             |
+  ##############   1    ########################   3    ###########
+  # LOG SOURCE # -----&gt; # Fail2Ban (Detection) # -----&gt; # Actions #
+  ##############        ########################        ###########
+</pre></dl><p>Net2Ban:</p>
+
+<dl><pre>
+                           --&gt; intelligence -&gt;-
+                         2 |                  |
+                        ########################
+  ##############   1    #   DETECTION AND/OR   #   3    ###########   
+  # LOG SOURCE # -----&gt; #  CORRELATION ENGINE  # -----&gt; # ACTIONS # ---
+  ##############        ########################        ###########   | 4
+                                                                      |
+   -------------------------------------------------------------------|
+   |
+ 4 |    ###############################   5    ###################
+   |--&gt; # Net2Ban: DO 'X' ACTION WITH # -----&gt; # RABBITMQ SERVER # --
+        # 'Y' IP AND 'Z' PORT(S)      #        ###################  |
+        ###############################                             | 6
+                                                                    |
+  ------------------------------------------------------------------|
+  |
+6 |    ############################
+  |    # NET2BAN SERVER: FORWARDS #   7    ###################################
+  |--&gt; # THE MESSAGE TO THE NODES # -----&gt; # NET2BAN CLIENT: DOES 'X' ACTION #
+       # THROUGH RABBITMQ         #        # WITH 'Y' IP AND 'Z' PORT(S)     #
+       ############################        ###################################
+</pre></dl><h2>
+<a name="why-rabbitmq" class="anchor" href="#why-rabbitmq"><span class="octicon octicon-link"></span></a>Why RabbitMQ?</h2>
+
+<p>It is true that there are many message brokers such as reddit or activemq, some of them give you a higher performance level when dealing in big environments such as WANs, but in my case, there was a RabbitMQ server already installed in the network. On the other hand, net2ban can be modified to work with a message broker specified in the configuration file. This approach could be made in future versions...</p>
+
+<h1>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h1>
+
+<h5>
+<a name="common-tasks" class="anchor" href="#common-tasks"><span class="octicon octicon-link"></span></a>Common Tasks</h5>
+
+<p>The following tasks are commons and required to install net2ban in the servers as well as in the clients:</p>
+
+<dl><pre>
+apt-get install python-pika python-passlib python-crypto
+git clone https://github.com/sch3m4/net2ban.git net2ban
+cd net2ban
+mkdir -p /user/share/net2ban/actions
+useradd -r -M net2ban -s /bin/false -b /usr/share
+cp -r net2ban /usr/share/net2ban/
+cp net2ban.py /usr/share/net2ban/
+cp net2ban.cfg /usr/share/net2ban/
+cp net2ban_init.d /etc/init.d/net2ban
+chown root:root /etc/init.d/net2ban
+chmod 0750 /etc/init.d/net2ban
+update-rc.d net2ban defaults
+</pre></dl><h5>
+<a name="server" class="anchor" href="#server"><span class="octicon octicon-link"></span></a>Server</h5>
+
+<p>Some extra actions to be made on server side:</p>
+
+<dl><pre>
+apt-get install rabbitmq-server fail2ban
+service fail2ban stop
+cp net2ban.cfg /usr/share/net2ban/
+cp net2banctl.py /sbin/net2banctl
+chown root:root /sbin/net2banctl
+chmod 0750 /sbin/net2banctl
+</pre></dl><h5>
+<a name="client" class="anchor" href="#client"><span class="octicon octicon-link"></span></a>Client</h5>
+
+<p>Some extra actions to be made on client side:</p>
+
+<dl><pre>
+apt-get install sudoers
+</pre></dl><p>In order to allow net2ban user execute the iptables binary, add the following entry to your "/etc/sudoers" file:</p>
+
+<dl><pre>
+echo 'net2ban ALL=NOPASSWD: /sbin/iptables' &gt;&gt; /etc/sudoers
+</pre></dl><p>NOTE: Add an entry like the aforementioned for each privileged command susceptible of being executed by net2ban clients</p>
+
+<h5>
+<a name="final-common-steps" class="anchor" href="#final-common-steps"><span class="octicon octicon-link"></span></a>Final common steps</h5>
+
+<p>As final steps, don't forget to change the owner and permissions of net2ban files:</p>
+
+<dl><pre>
+chown -R net2ban:net2ban /usr/share/net2ban
+chmod -R 0750 /usr/share/net2ban
+</pre></dl><h1>
+<a name="configuration-schema" class="anchor" href="#configuration-schema"><span class="octicon octicon-link"></span></a>Configuration schema</h1>
+
+<p>The net2ban.cfg looks as follows:</p>
+
+<dl><pre>
+[global]
+server = 172.16.0.1
+rounds = 12000
+secret = 57bae6f17927fee0309cd0fcf900903d0bf49277
+mode = server
+valid_wtime = 3600
+authkey = fe64809ba0286c72123d15ffb3554f261ef835d0
+queue_prefix = net2ban_
+
+[server]
+input = input_net2ban
+key = 1e3648858a30a105374c1a8a7f05e4fc0dff2abc
+
+[keygen]
+keylen = 40
+
+[client1]
+key = key1
+</pre></dl><h5>
+<a name="global" class="anchor" href="#global"><span class="octicon octicon-link"></span></a>global</h5>
+
+<p>The options in this sections are used by the server and clients. It can be used to set some parameters to a default value.</p>
+
+<h6>
+<a name="server-1" class="anchor" href="#server-1"><span class="octicon octicon-link"></span></a>server</h6>
+
+<p>This is the host/ip of the RabbitMQ server, used to establish the communication between the server and clients.</p>
+
+<h6>
+<a name="mode" class="anchor" href="#mode"><span class="octicon octicon-link"></span></a>mode</h6>
+
+<p>This is the working mode of this instance of net2ban, and have to be set to "client" or "server".</p>
+
+<h6>
+<a name="valid_wtime" class="anchor" href="#valid_wtime"><span class="octicon octicon-link"></span></a>valid_wtime</h6>
+
+<p>Valid window time for the messages, in seconds. All those messages that have been sent before the relative "valid_wtime" will be discarted.</p>
+
+<h6>
+<a name="rounds" class="anchor" href="#rounds"><span class="octicon octicon-link"></span></a>rounds</h6>
+
+<p>Rounds to be used when generating the session key by using PBKDF2</p>
+
+<h6>
+<a name="secret" class="anchor" href="#secret"><span class="octicon octicon-link"></span></a>secret</h6>
+
+<p>Shared secret to be used with the key of each client, to generate the session key by using PBKDF"</p>
+
+<h6>
+<a name="authkey" class="anchor" href="#authkey"><span class="octicon octicon-link"></span></a>authkey</h6>
+
+<p>Authentication key to generate the HMAC-SHA256 of each message</p>
+
+<h6>
+<a name="queue_prefix" class="anchor" href="#queue_prefix"><span class="octicon octicon-link"></span></a>queue_prefix</h6>
+
+<p>Prefix to create a queue for each client</p>
+
+<h5>
+<a name="server-2" class="anchor" href="#server-2"><span class="octicon octicon-link"></span></a>server</h5>
+
+<p>This section is specific to the server side.</p>
+
+<h6>
+<a name="input" class="anchor" href="#input"><span class="octicon octicon-link"></span></a>input</h6>
+
+<p>Queue name to read the messages and forward them</p>
+
+<h6>
+<a name="key" class="anchor" href="#key"><span class="octicon octicon-link"></span></a>key</h6>
+
+<p>Key used to decrypt the messages received</p>
+
+<h5>
+<a name="keygen" class="anchor" href="#keygen"><span class="octicon octicon-link"></span></a>keygen</h5>
+
+<h6>
+<a name="keylen" class="anchor" href="#keylen"><span class="octicon octicon-link"></span></a>keylen</h6>
+
+<p>When generating random keys to be used as auth key/secret/key through net2banctl, this parameter set the length of the generated random string</p>
+
+<h5>
+<a name="client1" class="anchor" href="#client1"><span class="octicon octicon-link"></span></a>client1</h5>
+
+<p>The name of this section is arbitrary and should not match with other entries. The name of this section will be used as client's name.</p>
+
+<h6>
+<a name="key-1" class="anchor" href="#key-1"><span class="octicon octicon-link"></span></a>key</h6>
+
+<p>Key used to decrypt the messages received</p>
+
+<h4>
+<a name="specifying-individual-parameters" class="anchor" href="#specifying-individual-parameters"><span class="octicon octicon-link"></span></a>Specifying individual parameters</h4>
+
+<p>The above configuration schema is the minimum required, as it can be modified by adding some parameters to server and clients sections in order to override the default ones.
+On this point, you can add the following options to any section related to clients/server:
+..* rounds
+..* secret
+..* key
+..* valid_wtime
+..* authkey</p>
+
+<p>Referring to the cryptographic values, the only key that must be similar in server and client side, is the "secret" option. If you locally modify a key on client side, remember to set the same key in the section belonging to that client in net2ban.cfg on server side.</p>
+
+<h1>
+<a name="sample-configuration" class="anchor" href="#sample-configuration"><span class="octicon octicon-link"></span></a>Sample configuration</h1>
+
+<p>On this point we're going to generate a configuration file to use the RabbitMQ server on 172.16.15.2 using two clients: client1 and client2. Moreover we will use individual configurations for the clients.</p>
+
+<h2>
+<a name="server-side" class="anchor" href="#server-side"><span class="octicon octicon-link"></span></a>Server side</h2>
+
+<p>At this step we are going to modify the net2ban.cfg file to set the proper values in order to work on server side, and afterwards copy the configuration to the clients.</p>
+
+<p>The minimum required configuraton looks as follows:</p>
+
+<dl><pre>
+[global]
+server = 172.16.15.2
+rounds = 12000
+secret = 57bae6f17927fee0309cd0fcf900903d0bf49277
+mode = server
+valid_wtime = 3600
+authkey = fe64809ba0286c72123d15ffb3554f261ef835d0
+queue_prefix = net2ban_
+
+[server]
+input = input_net2ban
+key = 1e3648858a30a105374c1a8a7f05e4fc0dff2abc
+
+[keygen]
+keylen = 40
+
+[client1]
+key = key1
+
+[client2]
+key = key2
+</pre></dl><p>To generate the client keys, we will use net2banctl:</p>
+
+<dl><pre>
+$ for i in $(seq 1 2); do net2banctl gen_random ; done
+ca82cd669623f6434e02eecade0236b50fc18cb3
+767c138a4483e692f41af3d1491f06c0ead41b5b
+$
+</pre></dl><p>Now, set the 'key' clients option to these values:</p>
+
+<dl><pre>
+[client1]
+key = ca82cd669623f6434e02eecade0236b50fc18cb3
+
+[client2]
+key = 767c138a4483e692f41af3d1491f06c0ead41b5b
+</pre></dl><p>If you want some client to use a different value of "rounds", just specify it in his section:</p>
+
+<dl><pre>
+[client2]
+rounds = 100
+key = 767c138a4483e692f41af3d1491f06c0ead41b5b
+</pre></dl><h2>
+<a name="client-side" class="anchor" href="#client-side"><span class="octicon octicon-link"></span></a>Client side</h2>
+
+<p>Indeed the client configuration is almost done. On this step you still need access to the server.</p>
+
+<p>To verify that net2banctl can see the configuration file and the clients specified on it, execute:</p>
+
+<dl><pre>
+$ net2banctl list_clients
+client1
+client2
+</pre></dl><p>Now, we need to export the configuration of each client and save it in /usr/share/net2ban/net2ban.cfg on each client. To do that, execute the following on the server:</p>
+
+<dl><pre>
+$ net2banctl get_client client1 &gt; client1.cfg
+$ cat client1.cfg
+[global]
+server = 172.16.15.2
+rounds = 12000
+secret = 57bae6f17927fee0309cd0fcf900903d0bf49277
+mode = client
+valid_wtime = 3600
+authkey = fe64809ba0286c72123d15ffb3554f261ef835d0
+queue_prefix = net2ban_
+
+[keygen]
+keylen = 40
+
+[client1]
+key = ca82cd669623f6434e02eecade0236b50fc18cb3
+$
+</pre></dl><h2>
+<a name="integrating-net2ban--fail2ban" class="anchor" href="#integrating-net2ban--fail2ban"><span class="octicon octicon-link"></span></a>Integrating net2ban &amp; fail2ban</h2>
+
+<p>In order to use net2ban in conjunction with fail2ban, you need to do some changes to your fail2ban configuration. First of all, copy your fail2ban action file (defined in /etc/fail2ban/jail.conf, [DEFAULT]/banaction) to /usr/share/net2ban/actions. In my case, I'm using "iptables-multiport":</p>
+
+<dl><pre>
+$ cp /etc/fail2ban/actions.d/iptables-multiport.conf /usr/share/net2ban/actions/
+</pre></dl><p>Edit the original fail2ban action file (in my case: /etc/fail2ban/actions.d/iptables-multiport.conf) and modify the value of the defined actions to the following ones:</p>
+
+<dl><pre>
+[Definition]
+actionstart = net2banctl exec iptables-multiport actionstart name=&lt;name&gt; chain=&lt;chain&gt; protocol=&lt;protocol&gt; port=&lt;port&gt;
+actionstop = net2banctl exec iptables-multiport actionstop name=&lt;name&gt; chain=&lt;chain&gt; protocol=&lt;protocol&gt; port=&lt;port&gt;
+actionban = net2banctl exec iptables-multiport actionban name=&lt;name&gt; ip=&lt;ip&gt;
+actionunban = net2banctl exec iptables-multiport actionunban name=&lt;name&gt; ip=&lt;ip&gt;
+# cheats fail2ban
+actioncheck = echo -n "&lt;chain&gt;&lt;name&gt;" &amp;&amp; exit 0
+
+[Init]
+name = default
+port = ssh
+protocol = tcp
+chain = INPUT
+</pre></dl><p>We're almost done. The final step is to start the net2ban daemon in server and clients side and send the "actions" file to the clients:</p>
+
+<dl><pre>
+$ for i in $(net2banctl list_clients); do net2banctl update $i /usr/share/net2ban/actions/iptables-multiport.conf ; done
+$
+</pre></dl><p>IMPORTANT: Remember to modify the actions file and add "sudo" before "iptables" to execute each command as root.</p>
+
+<p>Personally I prefer to ban the IP without taking care about the port, so the given IP is globally banned, here is my "iptables-multiport.conf" actions file:</p>
+
+<dl><pre>
+[Definition]
+actionstart = sudo iptables -N fail2ban-&lt;name&gt;
+              sudo iptables -A fail2ban-&lt;name&gt; -j RETURN
+              sudo iptables -I &lt;chain&gt; -p &lt;protocol&gt; -j fail2ban-&lt;name&gt;
+actionstop = sudo iptables -D &lt;chain&gt; -p &lt;protocol&gt; -j fail2ban-&lt;name&gt;
+             sudo iptables -F fail2ban-&lt;name&gt;
+             sudo iptables -X fail2ban-&lt;name&gt;
+actionban = sudo iptables -I fail2ban-&lt;name&gt; 1 -s &lt;ip&gt; -j DROP
+actionunban = sudo iptables -D fail2ban-&lt;name&gt; -s &lt;ip&gt; -j DROP
+[Init]
+name = default
+port = ssh
+protocol = tcp
+chain = INPUT
+</pre></dl><p>After that you should see something like this in your syslog:</p>
+
+<dl><pre>
+........ net2ban: File "iptables-multiport" updated
+</pre></dl><h2>
+<a name="not-restricted-to-fail2ban" class="anchor" href="#not-restricted-to-fail2ban"><span class="octicon octicon-link"></span></a>Not restricted to Fail2Ban</h2>
+
+<p>net2ban is not only restricted to be used with fail2ban, due to its architecture it can be used with any software. Imagine the following scenario:</p>
+
+<p>..* User 'user1' log in into a corporate application
+..* User 'user1' has not loged in his workstation</p>
+
+<p>The correlation engine detects an abnormal behaviour and executes net2banctl to automatically ban the IP on the other servers and/or applications (keep in mind that you are not limited to execute the iptables binary on client side) and report it.</p>
+
+<h2>
+<a name="saving-net2ban-server-logs" class="anchor" href="#saving-net2ban-server-logs"><span class="octicon octicon-link"></span></a>Saving net2ban server logs</h2>
+
+<p>By default, net2ban uses syslog to send logs, so if you want to save the logs generated by the tool in a different file (by default is logs to "daemon" file) you can modify your syslog-ng rules and add the following lines:</p>
+
+<dl><pre>destination d_net2ban { file ( "/var/log/net2ban.log" ); };
+destination d_rnet2ban { file ( "/var/log/remote/$FULLHOSTNAME/net2ban.log" );
+filter f_net2ban { facility ( daemon ); program ( "net2ban" ); };
+log { source(s_src); filter(f_net2ban); destination(d_net2ban); flags ( final ); };
+log { source(s_udp); filter(f_net2ban); destination(d_rnet2ban); flags ( final ); };</pre></dl><p>Keep in mind that the "log" rules must be the first matching rules in order to avoid duplicate logs.</p>
+
+<h2>
+<a name="sample-output" class="anchor" href="#sample-output"><span class="octicon octicon-link"></span></a>Sample output</h2>
+
+<p>Whenever fail2ban detects a break-in attept, it will generate an entry in the log like this:</p>
+
+<p></p><dl>
+<pre>.... fail2ban.actions: WARNING [dovecot] Ban 95.48.84.XXX</pre>
+
+<p>That action will execute net2banctl and send the message to the server, and the following log entry will be generated in your server:</p>
+
+<p></p>
+<dl>
+<pre>..... net2ban: Forwarding: exec/iptables-multiport</pre>
+
+<p>Finally, the net2ban nodes will receive the message, send a log entry and execute the action:</p>
+
+<p></p>
+<dl>
+<pre>..... net2ban: IP 95.48.84.XXX banned</pre>
+
+<p></p>
+<dl>
+<pre>$ iptables -nvL | grep -i 95.48.84.XXX
+    9   564 DROP       all  --  *      *       95.48.84.XXX         0.0.0.0/0
+$</pre>
+
+<h1>
+<a name="considerations" class="anchor" href="#considerations"><span class="octicon octicon-link"></span></a>Considerations</h1>
+
+<p>net2ban uses persistent queues on RabbitMQ, if a client is not connected and the server sends five messages to that client, the messages are stored in the queue, waiting for the client to connect and read them.
+On that point is very important the parameter "valid_wtime" in order to discard old messages.
+Even in a normal behaviour, and due to the parameter "valid_wtime" is very important that all nodes to be synchronized (ex: by using NTP)</p>
+
+<h1>
+<a name="code-issues" class="anchor" href="#code-issues"><span class="octicon octicon-link"></span></a>Code issues</h1>
+
+<p>The code is <em>very dirty</em>, it's a program written very fast "to work right now"...</p>
+</dl>
+</dl>
+</dl>
+</dl>
       </section>
     </div>
 
