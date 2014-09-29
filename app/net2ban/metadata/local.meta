@@ -1,0 +1,28 @@
+[app/ui]
+version = 6.1.3
+modtime = 1411567680.632689000
+
+[app/launcher]
+version = 6.1.3
+modtime = 1411567680.637389000
+
+[views/net2ban_actions]
+access = read : [ * ], write : [ admin ]
+export = none
+owner = admin
+version = 6.1.3
+modtime = 1411926575.437723000
+
+[views/net2ban_errors]
+access = read : [ * ], write : [ admin ]
+export = none
+owner = admin
+version = 6.1.3
+modtime = 1411898418.517977000
+
+[views/net2ban_dashboard]
+access = read : [ * ], write : [ admin ]
+export = none
+owner = admin
+version = 6.1.3
+modtime = 1411925903.872841000

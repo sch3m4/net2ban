@@ -1,0 +1,134 @@
+<dashboard>
+  <label>Net2Ban Errors</label>
+  <row>
+    <panel>
+      <single>
+        <title>Time Since Last Error</title>
+        <searchString>index="net2ban"  | regex "(?i)(error|warning|critical|invalid|malformed)" | regex _raw!="(?i)^.*\s+fail2ban\.\w+\s+:\s+INFO" | rex "^.*([0-9]{1,2}:){2}[0-9]{1,2}(,[0-9]{1,3})?\s+((\w+\.?){1,3})?(\s+)?(\w+)?:\s+(?&lt;mensaje&gt;.*)" | regex _raw!="WARNING\s+\[.*\]\s+((Unb|B)an\s+)?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\s+already\s+banned)?" | regex _raw!="WARNING Unable to find a corresponding IP address for ::1" | regex _raw!="MSG\s+to\s+" | sort -_time | head 1 | eval timedelta=now()-_time | eval ago=tostring(timedelta,"duration") | table ago</searchString>
+        <earliestTime>0</earliestTime>
+        <latestTime/>
+        <option name="drilldown">none</option>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="count">10</option>
+        <option name="linkView">search</option>
+      </single>
+    </panel>
+    <panel>
+      <chart>
+        <title>Errors by Hosts</title>
+        <searchString>index="net2ban"  | regex "(?i)(error|warning|critical|invalid|malformed)" | regex _raw!="(?i)^.*\s+fail2ban\.\w+\s+:\s+INFO" | rex "^.*([0-9]{1,2}:){2}[0-9]{1,2}(,[0-9]{1,3})?\s+((\w+\.?){1,3})?(\s+)?(\w+)?:\s+(?&lt;mensaje&gt;.*)" | regex _raw!="WARNING\s+\[.*\]\s+((Unb|B)an\s+)?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\s+already\s+banned)?" | regex _raw!="WARNING Unable to find a corresponding IP address for ::1" | stats count by host</searchString>
+        <earliestTime>0</earliestTime>
+        <latestTime/>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="count">10</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Errors</title>
+        <searchString>index="net2ban"  | regex "(?i)(error|warning|critical|invalid|malformed)" | regex _raw!="(?i)^.*\s+fail2ban\.\w+\s+:\s+INFO" | rex "^.*([0-9]{1,2}:){2}[0-9]{1,2}(,[0-9]{1,3})?\s+((\w+\.?){1,3})?(\s+)?(\w+)?:\s+(?&lt;mensaje&gt;.*)" | regex _raw!="WARNING\s+\[.*\]\s+((Unb|B)an\s+)?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\s+already\s+banned)?" | regex _raw!="WARNING Unable to find a corresponding IP address for ::1" | stats count by mensaje</searchString>
+        <earliestTime>0</earliestTime>
+        <latestTime/>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Latest 10 Errors</title>
+        <searchString>index="net2ban"  | regex "(?i)(error|warning|critical|invalid|malformed)" | regex _raw!="(?i)^.*\s+fail2ban\.\w+\s+:\s+INFO" | rex "^.*([0-9]{1,2}:){2}[0-9]{1,2}(,[0-9]{1,3})?\s+((\w+\.?){1,3})?(\s+)?(\w+)?:\s+(?&lt;mensaje&gt;.*)" | regex _raw!="WARNING\s+\[.*\]\s+((Unb|B)an\s+)?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\s+already\s+banned)?" | regex _raw!="WARNING Unable to find a corresponding IP address for ::1" | regex _raw!="MSG\s+to\s+" | stats latest(mensaje) as Error by _time,host | sort -_time | head 9</searchString>
+        <earliestTime>0</earliestTime>
+        <latestTime/>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Top 10 Errors</title>
+        <searchString>index="net2ban"  | regex "(?i)(error|warning|critical|invalid|malformed)" | regex _raw!="(?i)^.*\s+fail2ban\.\w+\s+:\s+INFO" | rex "^.*([0-9]{1,2}:){2}[0-9]{1,2}(,[0-9]{1,3})?\s+((\w+\.?){1,3})?(\s+)?(\w+)?:\s+(?&lt;message&gt;.*)" | regex _raw!="WARNING\s+\[.*\]\s+((Unb|B)an\s+)?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\s+already\s+banned)?" | regex _raw!="WARNING Unable to find a corresponding IP address for ::1" | regex _raw!="MSG\s+to\s+" | top limit=10 message</searchString>
+        <earliestTime>0</earliestTime>
+        <latestTime/>
+        <option name="wrap">true</option>
+        <option name="rowNumbers">false</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Errors Timeline</title>
+        <searchString>index="net2ban"  | regex "(?i)(error|warning|critical|invalid|malformed)" | regex _raw!="(?i)^.*\s+fail2ban\.\w+\s+:\s+INFO" | rex "^.*([0-9]{1,2}:){2}[0-9]{1,2}(,[0-9]{1,3})?\s+((\w+\.?){1,3})?(\s+)?(\w+)?:\s+(?&lt;mensaje&gt;.*)" | regex _raw!="WARNING\s+\[.*\]\s+((Unb|B)an\s+)?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(\s+already\s+banned)?" | regex _raw!="WARNING Unable to find a corresponding IP address for ::1" | regex _raw!="MSG\s+to\s+" | timechart count by mensaje limit=200</searchString>
+        <earliestTime>0</earliestTime>
+        <latestTime/>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">false</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.axisTitleX.text">Date</option>
+      </chart>
+    </panel>
+  </row>
+</dashboard>

@@ -1,0 +1,334 @@
+<view autoCancelInterval="90" isVisible="true" objectMode="SimpleDashboard" onunloadCancelJobs="true" refresh="-1" template="dashboard.html">
+  <label>Net2Ban Actions</label>
+  <module name="AccountBar" layoutPanel="appHeader"/>
+  <module name="AppBar" layoutPanel="navigationHeader"/>
+  <module name="Message" layoutPanel="messaging">
+    <param name="clearOnJobDispatch">False</param>
+    <param name="maxSize">1</param>
+    <param name="filter">*</param>
+  </module>
+  <module name="DashboardTitleBar" layoutPanel="viewHeader"/>
+  <module name="Message" layoutPanel="navigationHeader">
+    <param name="level">warn</param>
+    <param name="clearOnJobDispatch">True</param>
+    <param name="maxSize">1</param>
+    <param name="filter">splunk.search.job</param>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row1_col1" group="Total Amount of Banned IP" autoRun="True">
+    <param name="groupLabel">Total Amount of Banned IP</param>
+    <param name="search">index="net2ban" source="/var/log/fail2ban.log" | regex "Ban"| stats count</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>drilldown</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator">
+          <module name="SingleValue">
+            <module name="Gimp"/>
+          </module>
+        </module>
+      </module>
+    </module>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row1_col2" group="Most Active Service" autoRun="True">
+    <param name="groupLabel">Most Active Service</param>
+    <param name="search">index="net2ban" source="/var/log/fail2ban.log" | regex "Ban" | rex "\s+\[(?&lt;service&gt;.*)\]\s+" | top service limit=1 | fields service</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>drilldown</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator">
+          <module name="SingleValue">
+            <module name="Gimp"/>
+          </module>
+        </module>
+      </module>
+    </module>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row1_col3" group="Time Since Last Ban" autoRun="True">
+    <param name="groupLabel">Time Since Last Ban</param>
+    <param name="search">index="net2ban" | regex "^.*\s+net2ban:\s+IP\s+.*\s+banned$" | rex "net2ban:\s+IP\s+(?&lt;banned&gt;.*)\s+banned$" | dedup banned | sort -_time | head 1 | eval timedelta=now()-_time | eval ago=tostring(timedelta,"duration") | table ago</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>drilldown</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator">
+          <module name="SingleValue">
+            <module name="Gimp"/>
+          </module>
+        </module>
+      </module>
+    </module>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row2_col1" group="Ban Timeline by Services" autoRun="True">
+    <param name="groupLabel">Ban Timeline by Services</param>
+    <param name="search">index="net2ban" source="/var/log/fail2ban.log" | regex "Ban" | rex "\s+\[(?&lt;service&gt;.*)\]\s+" | timechart count by service</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>charting.chart.style</item>
+        <item>charting.drilldown</item>
+        <item>charting.axisY2.scale</item>
+        <item>charting.axisTitleY.visibility</item>
+        <item>charting.chart.nullValueMode</item>
+        <item>charting.chart.sliceCollapsingThreshold</item>
+        <item>charting.legend.labelStyle.overflowMode</item>
+        <item>charting.axisX.scale</item>
+        <item>charting.axisTitleX.visibility</item>
+        <item>charting.legend.placement</item>
+        <item>charting.axisLabelsX.majorLabelStyle.overflowMode</item>
+        <item>charting.chart.stackMode</item>
+        <item>charting.axisY2.enabled</item>
+        <item>charting.layout.splitSeries</item>
+        <item>charting.axisTitleY2.visibility</item>
+        <item>charting.axisY.scale</item>
+        <item>charting.axisLabelsX.majorLabelStyle.rotation</item>
+        <item>charting.chart</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator">
+          <module name="EnablePreview">
+            <param name="enable">True</param>
+            <param name="display">False</param>
+            <module name="HiddenChartFormatter">
+              <param name="charting.chart.style">shiny</param>
+              <param name="charting.axisY.scale">log</param>
+              <param name="charting.axisLabelsX.majorLabelStyle.rotation">0</param>
+              <param name="charting.axisTitleY.visibility">visible</param>
+              <param name="charting.chart.nullValueMode">gaps</param>
+              <param name="charting.chart.sliceCollapsingThreshold">0.01</param>
+              <param name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</param>
+              <param name="charting.axisX.scale">linear</param>
+              <param name="charting.axisTitleX.visibility">collapsed</param>
+              <param name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</param>
+              <param name="charting.chart.stackMode">default</param>
+              <param name="charting.axisY2.enabled">false</param>
+              <param name="charting.legend.placement">right</param>
+              <param name="charting.drilldown">all</param>
+              <param name="charting.layout.splitSeries">0</param>
+              <param name="charting.axisY2.scale">inherit</param>
+              <param name="charting.axisTitleY2.visibility">visible</param>
+              <param name="charting.chart">line</param>
+              <module name="JSChart">
+                <param name="width">100%</param>
+                <module name="Gimp"/>
+                <module name="ConvertToDrilldownSearch">
+                  <module name="ViewRedirector">
+                    <param name="viewTarget">flashtimeline</param>
+                  </module>
+                </module>
+              </module>
+              <module name="ViewRedirectorLink">
+                <param name="viewTarget">flashtimeline</param>
+              </module>
+            </module>
+          </module>
+        </module>
+      </module>
+    </module>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row2_col2" group="Ban Timeline by Date" autoRun="True">
+    <param name="groupLabel">Ban Timeline by Date</param>
+    <param name="search">index="net2ban" source="/var/log/fail2ban.log" | regex "Ban"| timechart count</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>charting.chart.style</item>
+        <item>charting.drilldown</item>
+        <item>charting.axisY2.scale</item>
+        <item>charting.axisTitleY.visibility</item>
+        <item>charting.chart.nullValueMode</item>
+        <item>charting.chart.sliceCollapsingThreshold</item>
+        <item>charting.legend.labelStyle.overflowMode</item>
+        <item>charting.axisX.scale</item>
+        <item>charting.axisTitleX.visibility</item>
+        <item>charting.legend.placement</item>
+        <item>charting.axisLabelsX.majorLabelStyle.overflowMode</item>
+        <item>charting.chart.stackMode</item>
+        <item>charting.axisY2.enabled</item>
+        <item>charting.layout.splitSeries</item>
+        <item>charting.axisTitleY2.visibility</item>
+        <item>charting.axisY.scale</item>
+        <item>charting.axisLabelsX.majorLabelStyle.rotation</item>
+        <item>charting.chart</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator">
+          <module name="EnablePreview">
+            <param name="enable">True</param>
+            <param name="display">False</param>
+            <module name="HiddenChartFormatter">
+              <param name="charting.chart.style">shiny</param>
+              <param name="charting.axisY.scale">log</param>
+              <param name="charting.axisLabelsX.majorLabelStyle.rotation">0</param>
+              <param name="charting.axisTitleY.visibility">collapsed</param>
+              <param name="charting.chart.nullValueMode">gaps</param>
+              <param name="charting.chart.sliceCollapsingThreshold">0.01</param>
+              <param name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</param>
+              <param name="charting.axisX.scale">linear</param>
+              <param name="charting.axisTitleX.visibility">collapsed</param>
+              <param name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</param>
+              <param name="charting.chart.stackMode">default</param>
+              <param name="charting.axisY2.enabled">false</param>
+              <param name="charting.legend.placement">none</param>
+              <param name="charting.drilldown">all</param>
+              <param name="charting.layout.splitSeries">0</param>
+              <param name="charting.axisY2.scale">inherit</param>
+              <param name="charting.axisTitleY2.visibility">visible</param>
+              <param name="charting.chart">line</param>
+              <module name="JSChart">
+                <param name="width">100%</param>
+                <module name="Gimp"/>
+                <module name="ConvertToDrilldownSearch">
+                  <module name="ViewRedirector">
+                    <param name="viewTarget">flashtimeline</param>
+                  </module>
+                </module>
+              </module>
+              <module name="ViewRedirectorLink">
+                <param name="viewTarget">flashtimeline</param>
+              </module>
+            </module>
+          </module>
+        </module>
+      </module>
+    </module>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row3_col1" group="Ban History" autoRun="True">
+    <param name="groupLabel">Ban History</param>
+    <param name="search">index="net2ban" | regex "^.*\s+net2ban:\s+IP\s+.*\s+banned$" | rex "^.*\s+net2ban:\s+IP\s+(?&lt;banned&gt;.*)\s+banned$" | dedup _time,banned | table _time,banned</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>drilldown</item>
+        <item>table.wrap</item>
+        <item>table.drilldown</item>
+        <item>raw.drilldown</item>
+        <item>maxLines</item>
+        <item>count</item>
+        <item>list.drilldown</item>
+        <item>wrap</item>
+        <item>type</item>
+        <item>dataOverlayMode</item>
+        <item>list.wrap</item>
+        <item>rowNumbers</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator"/>
+        <module name="Paginator">
+          <param name="entityName">results</param>
+          <param name="count">10</param>
+          <module name="EnablePreview">
+            <param name="enable">True</param>
+            <param name="display">False</param>
+            <module name="SimpleResultsTable">
+              <param name="entityName">results</param>
+              <param name="dataOverlayMode">none</param>
+              <param name="count">10</param>
+              <param name="allowTransformedFieldSelect">True</param>
+              <param name="drilldown">cell</param>
+              <module name="Gimp"/>
+              <module name="ConvertToDrilldownSearch">
+                <module name="ViewRedirector">
+                  <param name="viewTarget">flashtimeline</param>
+                </module>
+              </module>
+            </module>
+            <module name="ViewRedirectorLink">
+              <param name="viewTarget">flashtimeline</param>
+            </module>
+          </module>
+        </module>
+      </module>
+    </module>
+  </module>
+  <module name="HiddenSearch" layoutPanel="panel_row3_col2" group="Actions by Services" autoRun="True">
+    <param name="groupLabel">Actions by Services</param>
+    <param name="search">index="net2ban" source="/var/log/fail2ban.log" | regex "Ban" | rex "\s+\[(?&lt;servicio&gt;.*)\]\s+" | stats count by servicio</param>
+    <param name="earliest">0</param>
+    <module name="ViewstateAdapter">
+      <param name="suppressionList">
+        <item>charting.chart.style</item>
+        <item>charting.drilldown</item>
+        <item>charting.axisY2.scale</item>
+        <item>charting.axisTitleY.visibility</item>
+        <item>charting.chart.nullValueMode</item>
+        <item>charting.chart.sliceCollapsingThreshold</item>
+        <item>charting.legend.labelStyle.overflowMode</item>
+        <item>charting.axisX.scale</item>
+        <item>charting.axisTitleX.visibility</item>
+        <item>charting.legend.placement</item>
+        <item>charting.axisLabelsX.majorLabelStyle.overflowMode</item>
+        <item>charting.chart.stackMode</item>
+        <item>charting.axisY2.enabled</item>
+        <item>charting.layout.splitSeries</item>
+        <item>charting.axisTitleY2.visibility</item>
+        <item>charting.axisY.scale</item>
+        <item>charting.axisLabelsX.majorLabelStyle.rotation</item>
+        <item>charting.chart</item>
+      </param>
+      <module name="HiddenFieldPicker">
+        <param name="strictMode">True</param>
+        <module name="JobProgressIndicator">
+          <module name="EnablePreview">
+            <param name="enable">True</param>
+            <param name="display">False</param>
+            <module name="HiddenChartFormatter">
+              <param name="charting.chart.style">shiny</param>
+              <param name="charting.axisY.scale">linear</param>
+              <param name="charting.axisLabelsX.majorLabelStyle.rotation">0</param>
+              <param name="charting.axisTitleY.visibility">visible</param>
+              <param name="charting.chart.nullValueMode">gaps</param>
+              <param name="charting.chart.sliceCollapsingThreshold">0.01</param>
+              <param name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</param>
+              <param name="charting.axisX.scale">linear</param>
+              <param name="charting.axisTitleX.visibility">visible</param>
+              <param name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</param>
+              <param name="charting.chart.stackMode">default</param>
+              <param name="charting.axisY2.enabled">0</param>
+              <param name="charting.legend.placement">right</param>
+              <param name="charting.drilldown">all</param>
+              <param name="charting.layout.splitSeries">0</param>
+              <param name="charting.axisY2.scale">inherit</param>
+              <param name="charting.axisTitleY2.visibility">visible</param>
+              <param name="charting.chart">pie</param>
+              <module name="JSChart">
+                <param name="width">100%</param>
+                <module name="Gimp"/>
+                <module name="ConvertToDrilldownSearch">
+                  <module name="ViewRedirector">
+                    <param name="viewTarget">flashtimeline</param>
+                  </module>
+                </module>
+              </module>
+              <module name="ViewRedirectorLink">
+                <param name="viewTarget">flashtimeline</param>
+              </module>
+            </module>
+          </module>
+        </module>
+      </module>
+    </module>
+    <module name="HiddenSearch" layoutPanel="panel_row4_col1" group="Geolocation" autoRun="true">
+      <param name="groupLabel">Geolocation</param>
+      <param name="search">index="net2ban" | regex "^.*\s+net2ban:\s+IP\s+.*\s+banned$" | rex "net2ban:\s+IP\s+(?&lt;banned&gt;.*)\s+banned$" | geoip banned</param>
+      <param name="earliest">0</param>
+      <module name="GoogleMaps">
+        <param name="height">500px</param>
+        <param name="mapType">roadmap</param>
+        <param name="scrollwheel">off</param>
+      </module>
+    </module>
+  </module>
+</view>
