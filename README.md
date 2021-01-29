@@ -75,7 +75,7 @@ The following tasks are commons and required to install net2ban in the servers a
 apt-get install python-pika python-passlib python-crypto
 git clone https://github.com/sch3m4/net2ban.git net2ban
 cd net2ban
-mkdir -p /user/share/net2ban/actions
+mkdir -p /usr/share/net2ban/actions
 useradd -r -M net2ban -s /bin/false -b /usr/share
 cp -r net2ban /usr/share/net2ban/
 cp net2ban.py /usr/share/net2ban/
